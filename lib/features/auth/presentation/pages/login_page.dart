@@ -9,6 +9,8 @@ import '../../../../core/utils/validators.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../providers/auth_provider.dart';
+import '../../../../core/network/token_storage.dart';
+import '../../data/repositories/remote_auth_repository.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -22,6 +24,22 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isSubmitting = false;
+  @override
+  void initState() {
+    super.initState();
+    _prefillRememberedEmail();
+  }
+
+  Future<void> _prefillRememberedEmail() async {
+    final repository = ref.read(authRepositoryProvider);
+    if (repository is RemoteAuthRepository) {
+      final tokenStorage = TokenStorage();
+      final email = await tokenStorage.getRememberedEmail();
+      if (email != null && mounted) {
+        _emailController.text = email;
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -43,7 +61,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     if (!success) {
       final message = ref.read(authProvider).errorMessage ?? 'Login failed';
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
     }
     // On success, GoRouter's redirect (driven by authProvider) takes
     // over and navigates to the main shell automatically.
@@ -56,16 +75,20 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: AppConstants.spaceLg),
+            padding:
+                const EdgeInsets.symmetric(horizontal: AppConstants.spaceLg),
             child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 48),
-                  Icon(Icons.movie_creation_outlined, size: 48, color: AppColors.accent),
+                  const Icon(Icons.movie_creation_outlined,
+                      size: 48, color: AppColors.accent),
                   const SizedBox(height: 16),
-                  Text('Welcome back', style: AppTextStyles.headlineMedium, textAlign: TextAlign.center),
+                  Text('Welcome back',
+                      style: AppTextStyles.headlineMedium,
+                      textAlign: TextAlign.center),
                   const SizedBox(height: 8),
                   Text(
                     'Log in to pick up where you left off.',
@@ -101,7 +124,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text("Don't have an account?", style: AppTextStyles.bodyMedium),
+                      Text("Don't have an account?",
+                          style: AppTextStyles.bodyMedium),
                       TextButton(
                         onPressed: () => context.push(RouteNames.register),
                         child: const Text('Sign up'),
